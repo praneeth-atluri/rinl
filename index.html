@@ -25,6 +25,7 @@
         </div>
       </div>
       <div class="nav-links">
+        <input type="text" id="global-search" class="global-search-bar" placeholder="🔍 Search Topics...">
         <a href="#topics" class="nav-link">Topics</a>
         <a href="#flashcards" class="nav-link">Flashcards</a>
         <a href="#quiz" class="nav-link">Quiz</a>
@@ -116,6 +117,12 @@
         </div>
         <button id="fc-next" class="fc-nav-btn" aria-label="Next card">›</button>
       </div>
+      <div style="text-align: center; margin-top: 20px;">
+        <button id="btn-generate-flashcards" class="btn btn-primary" style="background: var(--clr-teal); border-color: var(--clr-teal);">✨ Generate AI Flashcards</button>
+        <div id="flashcard-spinner" style="display:none; color: var(--clr-teal); margin-top: 10px;">
+          <span style="animation: spin 1s linear infinite; display:inline-block; margin-right:5px;">⚙️</span> Generating from PDF...
+        </div>
+      </div>
     </div>
   </section>
 
@@ -129,6 +136,12 @@
       </div>
       <div class="quiz-container" id="quiz-container">
         <!-- Quiz content rendered by JS -->
+      </div>
+      <div style="text-align: center; margin-top: 20px;">
+        <button id="btn-generate-quiz" class="btn btn-primary" style="background: var(--clr-orange); border-color: var(--clr-orange);">✨ Generate AI Quiz Challenge</button>
+        <div id="quiz-spinner" style="display:none; color: var(--clr-orange); margin-top: 10px;">
+          <span style="animation: spin 1s linear infinite; display:inline-block; margin-right:5px;">⚙️</span> Generating from PDF...
+        </div>
       </div>
     </div>
   </section>
@@ -179,7 +192,10 @@
     <div class="section-inner">
       <div class="section-header">
         <div class="section-chip">🤖 AI Assistant</div>
-        <h2 class="section-title">Interview Prep Bot</h2>
+        <h2 class="section-title">
+          Interview Prep Bot
+          <button id="api-key-btn" class="settings-btn" aria-label="API Settings">⚙️</button>
+        </h2>
         <p class="section-desc">Ask anything about RINL Vigilance — get expert-level answers instantly</p>
       </div>
       <div class="chatbot-wrapper">
@@ -211,6 +227,26 @@
     </div>
   </section>
 
+  <!-- API KEY MODAL -->
+  <div id="api-modal" class="modal hidden">
+    <div class="modal-content api-modal-content">
+      <div class="modal-header">
+        <h3>AI Assistant Settings</h3>
+        <button id="close-api-modal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>To enable the **OpenAI model** for smart summaries and advanced understanding, please enter an OpenAI API Key. It will be stored securely in your browser's local storage and never sent anywhere else.</p>
+        <div class="input-group">
+          <label for="gemini-api-key">OpenAI API Key</label>
+          <input type="password" id="gemini-api-key" placeholder="sk-proj-...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="save-api-key-btn" class="btn btn-primary">Save Key</button>
+      </div>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer id="footer">
     <div class="footer-inner">
@@ -226,6 +262,7 @@
     </div>
   </footer>
 
+  <script src="pdf_data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

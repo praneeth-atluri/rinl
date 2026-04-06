@@ -108,7 +108,30 @@ body {
 .nav-links {
   display: flex;
   gap: 4px;
+  align-items: center;
   margin-left: auto;
+}
+
+.global-search-bar {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--clr-text);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  outline: none;
+  width: 250px;
+  transition: var(--transition);
+  margin-right: 15px;
+}
+
+.global-search-bar:focus {
+  border-color: var(--clr-orange);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hidden-by-search {
+  display: none !important;
 }
 
 .nav-link {
@@ -1372,6 +1395,61 @@ section {
   font-weight: 600;
   padding: 5px 12px;
   border-radius: 100px;
+}
+
+.chat-disclaimer {
+  font-size: 11px;
+  color: var(--clr-text-dim);
+  padding: 8px 20px 12px;
+  text-align: center;
+}
+
+/* Chat Settings */
+.settings-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: 10px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.settings-btn:hover {
+  opacity: 1;
+  transform: rotate(45deg);
+}
+
+.api-modal-content {
+  max-width: 450px;
+}
+.input-group {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.input-group label {
+  font-size: 0.9rem;
+  color: var(--clr-text-muted);
+}
+.input-group input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--clr-text);
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+}
+.input-group input:focus {
+  outline: none;
+  border-color: var(--clr-orange);
+}
+
+/* Modal formatting reuse */
+.modal-footer {
+  margin-top: 25px;
+  text-align: right;
 }
 
 .hidden { display: none !important; }

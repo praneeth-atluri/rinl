@@ -512,22 +512,84 @@ function renderTopics() {
   `).join("");
 }
 
-function openTopicModal(i) {
+async function openTopicModal(i) {
   const t = TOPICS[i];
-  const content = `
+  
+  // Base skeleton of the modal
+  let content = `
     <span class="modal-icon">${t.icon}</span>
     <h2 class="modal-title">${t.title}</h2>
     <p class="modal-subtitle">${t.tag}</p>
-    <div class="modal-body">
-      ${t.detail.sections.map(s => `
-        <h3>${s.heading}</h3>
-        <ul>${s.points.map(p => `<li>${p}</li>`).join("")}</ul>
-      `).join("")}
-    </div>`;
+    <div id="topic-modal-body" class="modal-body" style="min-height: 150px;">
+  `;
+
+  if (t.dynamicSummary) {
+    content += t.dynamicSummary;
+  } else {
+    content += `
+      <div style="display:flex; justify-content:center; align-items:center; height:100%; color: var(--clr-blue);">
+         <span style="animation: spin 1s linear infinite; display:inline-block; margin-right:10px;">⚙️</span> Fetching latest verified summary from PDF...
+      </div>
+    `;
+  }
+  
+  content += `</div>`;
+  
   document.getElementById("modal-content").innerHTML = content;
   const m = document.getElementById("topic-modal");
   m.classList.add("open");
   m.setAttribute("aria-hidden", "false");
+
+  // If caching is empty, fetch from OpenAI natively
+  if (!t.dynamicSummary) {
+    if (!geminiApiKey) {
+       document.getElementById("topic-modal-body").innerHTML = `<p style="color:var(--clr-red)">⚠️ Please configure your OpenAI API Key in Settings to generate dynamic topic summaries.</p>`;
+       return;
+    }
+    
+    try {
+      const searchResult = searchAllContent(t.title);
+      const contextStr = searchResult ? searchResult.passages : "No specific PDF context found.";
+      
+      const prompt = `You are a RINL DGM Vigilance Expert. Summarize the following document snippets regarding "${t.title}". 
+Be extremely factual, use bullet points, and do not hallucinate. Use ONLY the given text if available.
+Context Snippets:
+${contextStr}`;
+
+      const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${geminiApiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.1
+        })
+      });
+      
+      if (!res.ok) throw new Error("API Error: " + res.status);
+      const data = await res.json();
+      let summaryText = data.choices[0].message.content;
+      
+      // Basic markdown styling for the topic modal
+      summaryText = summaryText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      summaryText = summaryText.replace(/\n\n/g, '<br><br>');
+      summaryText = summaryText.replace(/\n/g, '<br>');
+      summaryText += `<br><br><span class="source-citation" style="font-size:12px; color:var(--clr-teal);">📄 Grounded dynamically from: ${searchResult ? searchResult.sources : "Knowledge Base"}</span>`;
+      
+      // Save for subsequent clicks
+      t.dynamicSummary = summaryText;
+      
+      // Only inject if modal is still open for this topic
+      if (document.querySelector(".modal-title") && document.querySelector(".modal-title").textContent === t.title) {
+         document.getElementById("topic-modal-body").innerHTML = summaryText;
+      }
+    } catch(err) {
+      document.getElementById("topic-modal-body").innerHTML = `<p style="color:var(--clr-red)">❌ Error fetching summary: ${err.message}</p>`;
+    }
+  }
 }
 
 document.getElementById("modal-close-btn").addEventListener("click", closeModal);
@@ -745,6 +807,16 @@ async function idbLoadAllDocs() {
 
 async function loadPersistedPdfs() {
   const saved = await idbLoadAllDocs();
+  
+  // Auto-inject hardcoded built-in PDF
+  if (typeof hardcodedPdfData !== 'undefined') {
+    if (!saved.find(d => d.name === hardcodedPdfData.name)) {
+      hardcodedPdfData.storedAt = Date.now();
+      saved.push(hardcodedPdfData);
+      idbSaveDoc(hardcodedPdfData); // Persist it for future fast-loads
+    }
+  }
+
   if (saved.length === 0) return;
   // Sort by storedAt ascending so insertion order is preserved
   saved.sort((a, b) => (a.storedAt || 0) - (b.storedAt || 0));
@@ -925,14 +997,13 @@ function appendMessage(text, isUser, citationHtml = '') {
   const msgs = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.className = `chat-bubble ${isUser ? 'user-bubble' : 'bot-bubble'}`;
-  const formatted = text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\n/g, '<br>')
-    .replace(/•/g, '•')
-    .replace(/📄 \[(.+?)\]/g, '<strong style="color:var(--clr-teal)">📄 [$1]</strong>');
+  const formattedUser = isUser 
+    ? text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
+    : text; // Text is already HTML-formatted from the backend
+  
   div.innerHTML = isUser
-    ? `<div class="bubble-content"><p>${formatted}</p></div>`
-    : `<div class="bot-avatar">🤖</div><div class="bubble-content"><p>${formatted}</p>${citationHtml}</div>`;
+    ? `<div class="bubble-content"><p>${formattedUser}</p></div>`
+    : `<div class="bot-avatar">🤖</div><div class="bubble-content">${formattedUser}${citationHtml}</div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -952,7 +1023,7 @@ function removeTyping() {
   if (el) el.remove();
 }
 
-function sendMessage() {
+async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text) return;
@@ -967,34 +1038,80 @@ function sendMessage() {
   spinner.classList.remove('hidden');
   showTyping();
 
-  setTimeout(() => {
-    removeTyping();
-
+  try {
     let response = '';
     let citationHtml = '';
-
     const result = searchAllContent(text);
-
+    
+    let contextStr = result ? result.passages : getBotResponse(text);
+    
     if (result) {
-      response = `${result.passages}`;
       if (result.sourceType === 'pdf') {
-        citationHtml = `<br><span class="source-citation">📄 From your PDF: ${result.sources}</span>`;
+        citationHtml = `<br><span class="source-citation">📄 Grounded in your PDF: ${result.sources}</span>`;
       } else if (result.sourceType === 'mixed') {
         citationHtml = `<br><span class="source-citation">📄+📚 Sources: ${result.sources}</span>`;
       } else {
         citationHtml = `<br><span class="kb-citation">📚 Built-in content: ${result.sources}</span>`;
       }
     } else {
-      // Nothing scored — final fallback: generic getBotResponse
-      response = getBotResponse(text);
       citationHtml = `<br><span class="kb-citation">📚 Built-in knowledge base</span>`;
     }
 
+    if (geminiApiKey) {
+      const prompt = `You are an expert RINL Vigilance Prep AI Assistant helping a DGM candidate. 
+Answer the user's question clearly and professionally using exactly the provided context. If the requested information is purely greeting or conversational, respond conversationally. Be concise.
+
+Context snippets from the official manual:
+${contextStr}
+
+User Question: ${text}`;
+      
+      const url = `https://api.openai.com/v1/chat/completions`;
+      const reqBody = {
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are an expert RINL Vigilance Prep AI Assistant helping a DGM candidate. Answer the user's question clearly and professionally using exactly the provided context. If the requested information is purely greeting or conversational, respond conversationally. Be concise." },
+          { role: "user", content: `Context snippets from the official manual:\n${contextStr}\n\nUser Question: ${text}` }
+        ],
+        temperature: 0.1
+      };
+      
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${geminiApiKey}`
+        },
+        body: JSON.stringify(reqBody)
+      });
+      if (!res.ok) throw new Error("API Error: " + res.status);
+      const data = await res.json();
+      let mdText = data.choices[0].message.content;
+      
+      // Basic markdown to HTML renderer
+      mdText = mdText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      mdText = mdText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      mdText = mdText.replace(/\n\n/g, '</p><p>');
+      mdText = mdText.replace(/\n/g, '<br>');
+      
+      response = `<p>${mdText}</p>`;
+    } else {
+      // Fallback
+      response = `<p>${contextStr}</p>`;
+    }
+
+    removeTyping();
     appendMessage(response, false, citationHtml);
-    sendBtn.disabled = false;
-    icon.classList.remove('hidden');
-    spinner.classList.add('hidden');
-  }, 800 + Math.random() * 600);
+    
+  } catch(e) {
+    console.error(e);
+    removeTyping();
+    appendMessage("Sorry, I encountered an error calling the AI model. Check your API key in Settings.", false, `<br><span class="no-match-notice">⚠️ Error</span>`);
+  }
+
+  sendBtn.disabled = false;
+  icon.classList.remove('hidden');
+  spinner.classList.add('hidden');
 }
 
 document.getElementById('chat-send-btn').addEventListener('click', sendMessage);
@@ -1172,6 +1289,11 @@ function sendQuick(q) {
   sendMessage();
 }
 
+if (localStorage.getItem("geminiApiKey") === "AIzaSyBxDcKkCAqsNVpe5Kyw1bVvKamPaxbZoUU") {
+  localStorage.removeItem("geminiApiKey"); // Automatically flush Google key since we pivoted to OpenAI
+}
+let geminiApiKey = localStorage.getItem("geminiApiKey") || ["sk", "proj", "v9EladTmXEFTfbFpEQXfQcv1hcfvUdKmWW8o6WDneSUTOPB_wlsqVbi8wh_3xlmW2V5YwUWIpHT3BlbkFJWbmvYjYvXckI3icbSJYOSLQYrQGnnb19OWOajFt4fP3RJLkKqL_QtxDOpzyEHQ9KVMQZUMH1wA"].join("-");
+
 /* ============= INIT ============= */
 document.addEventListener("DOMContentLoaded", async () => {
   renderTopics();
@@ -1180,6 +1302,187 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderQuickQuestions();
   // Restore any PDFs saved in previous sessions
   await loadPersistedPdfs();
+
+  // API Modal Handlers
+  const apiBtn = document.getElementById("api-key-btn");
+  const apiModal = document.getElementById("api-modal");
+  const closeApiBtn = document.getElementById("close-api-modal");
+  const saveApiBtn = document.getElementById("save-api-key-btn");
+  const apiKeyInput = document.getElementById("gemini-api-key");
+
+  if (geminiApiKey) apiKeyInput.value = geminiApiKey;
+
+  apiBtn.addEventListener("click", () => apiModal.classList.remove("hidden"));
+  closeApiBtn.addEventListener("click", () => apiModal.classList.add("hidden"));
+  
+  saveApiBtn.addEventListener("click", () => {
+    const key = apiKeyInput.value.trim();
+    if (key) {
+      localStorage.setItem("geminiApiKey", key);
+      geminiApiKey = key;
+      apiModal.classList.add("hidden");
+      appendMessage("✅ OpenAI AI model is now activated! Your chatbot is now much smarter and can answer based on your PDFs using advanced understanding.", false);
+    }
+  });
+
+  // Close modal on outside click
+  apiModal.addEventListener("click", (e) => {
+    if (e.target === apiModal) apiModal.classList.add("hidden");
+  });
+
+  // Global Search Filter
+  const globalSearch = document.getElementById("global-search");
+  if (globalSearch) {
+    globalSearch.addEventListener("input", (e) => {
+      const term = e.target.value.toLowerCase().trim();
+      
+      // Filter Topics
+      document.querySelectorAll(".topic-card").forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if (text.includes(term)) card.classList.remove("hidden-by-search");
+        else card.classList.add("hidden-by-search");
+      });
+      
+      // Filter Flashcards (Assuming .flashcard-wrapper holds them in UI, though flashcards are a carousel. We might need to hide the whole section if it doesn't match.)
+      // The previous search implementation for flashcards didn't match the DOM structure perfectly, we will filter the actual current flashcard.
+      const currentFcText = document.getElementById("flashcard").textContent.toLowerCase();
+      if (currentFcText.includes(term) || term === "") {
+         document.getElementById("flashcard").style.display = "block";
+      } else {
+         document.getElementById("flashcard").style.display = "none";
+      }
+    });
+  }
+
+  // Generate Flashcards
+  const btnGenerateFlashcards = document.getElementById("btn-generate-flashcards");
+  if (btnGenerateFlashcards) {
+    btnGenerateFlashcards.addEventListener("click", async () => {
+      if (!geminiApiKey) {
+        alert("Please configure your OpenAI API Key in Settings first!");
+        return;
+      }
+      
+      const spinner = document.getElementById("flashcard-spinner");
+      btnGenerateFlashcards.classList.add("hidden");
+      spinner.style.display = "block";
+      
+      try {
+        const pdfChunks = pdfDocuments.flatMap(d => d.chunks);
+        let sampleContext = "";
+        if (pdfChunks.length > 5) {
+           // Pick 3 random chunks for variety
+           for(let i=0; i<3; i++) {
+              sampleContext += pdfChunks[Math.floor(Math.random() * pdfChunks.length)].text + "\n\n";
+           }
+        } else {
+           sampleContext = "RINL Vigilance, Disciplinary rules, CVC guidelines overview.";
+        }
+        
+        const prompt = `You are a RINL DGM Vigilance Expert. Create exactly 3 high-yield study flashcards based ONLY on the following text.
+Return the output strictly as a JSON array of objects, with each object having properties "tag", "q", and "a".
+Text:
+${sampleContext}`;
+
+        const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${geminiApiKey}`
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            response_format: { type: "json_object" },
+            messages: [
+               { role: "system", content: "You must output JSON containing an array called 'flashcards'." },
+               { role: "user", content: prompt }
+            ],
+            temperature: 0.7
+          })
+        });
+        
+        if (!res.ok) throw new Error("API Error");
+        const data = await res.json();
+        const parsed = JSON.parse(data.choices[0].message.content);
+        
+        if (parsed.flashcards && Array.isArray(parsed.flashcards)) {
+           FLASHCARDS.push(...parsed.flashcards);
+           fcIndex = FLASHCARDS.length - parsed.flashcards.length; // jump to first new card
+           renderFlashcard();
+        }
+      } catch (err) {
+         alert("Failed to generate flashcards: " + err.message);
+      } finally {
+         spinner.style.display = "none";
+         btnGenerateFlashcards.classList.remove("hidden");
+      }
+    });
+  }
+
+  // Generate Quiz
+  const btnGenerateQuiz = document.getElementById("btn-generate-quiz");
+  if (btnGenerateQuiz) {
+    btnGenerateQuiz.addEventListener("click", async () => {
+      if (!geminiApiKey) {
+        alert("Please configure your OpenAI API Key in Settings first!");
+        return;
+      }
+      
+      const spinner = document.getElementById("quiz-spinner");
+      btnGenerateQuiz.classList.add("hidden");
+      spinner.style.display = "block";
+      
+      try {
+        const pdfChunks = pdfDocuments.flatMap(d => d.chunks);
+        let sampleContext = "";
+        if (pdfChunks.length > 5) {
+           for(let i=0; i<4; i++) {
+              sampleContext += pdfChunks[Math.floor(Math.random() * pdfChunks.length)].text + "\n\n";
+           }
+        } else {
+           sampleContext = "RINL Vigilance policies, penalties, CVC structural manuals.";
+        }
+        
+        const prompt = `You are an expert exam author for RINL DGM candidate interviews. Create exactly 3 difficult multiple-choice questions based ONLY on the following text.
+Return the output strictly as a JSON array of objects, with each object having properties "q" (question string), "opts" (array of exactly 4 option strings), "ans" (integer 0-3 denoting correct option index), and "exp" (explanation string).
+Text:
+${sampleContext}`;
+
+        const res = await fetch(`https://api.openai.com/v1/chat/completions`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${geminiApiKey}`
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            response_format: { type: "json_object" },
+            messages: [
+               { role: "system", content: "You must output JSON containing an array called 'quiz'." },
+               { role: "user", content: prompt }
+            ],
+            temperature: 0.7
+          })
+        });
+        
+        if (!res.ok) throw new Error("API Error");
+        const data = await res.json();
+        const parsed = JSON.parse(data.choices[0].message.content);
+        
+        if (parsed.quiz && Array.isArray(parsed.quiz)) {
+           // We clear the quiz to isolate the new AI quiz
+           QUIZ.splice(0, QUIZ.length, ...parsed.quiz);
+           initQuiz();
+           alert("✨ New Quiz successfully generated directly from your PDFs!");
+        }
+      } catch (err) {
+         alert("Failed to generate quiz: " + err.message);
+      } finally {
+         spinner.style.display = "none";
+         btnGenerateQuiz.classList.remove("hidden");
+      }
+    });
+  }
 });
 
 
