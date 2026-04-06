@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RINL Vigilance Interview Prep | DGM Edition</title>
+  <meta name="description" content="Comprehensive interview preparation platform for RINL Vizag Steel Plant Vigilance Department. Practice with an AI-powered chatbot, explore key topics, and ace your DGM interview." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- PDF.js for in-browser PDF text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <div class="nav-inner">
+      <div class="nav-logo">
+        <div class="logo-icon">⚙️</div>
+        <div>
+          <span class="logo-main">RINL</span>
+          <span class="logo-sub">Vigilance Prep</span>
+        </div>
+      </div>
+      <div class="nav-links">
+        <a href="#topics" class="nav-link">Topics</a>
+        <a href="#flashcards" class="nav-link">Flashcards</a>
+        <a href="#quiz" class="nav-link">Quiz</a>
+        <a href="#pdf-docs" class="nav-link">📄 PDF Docs</a>
+        <a href="#chatbot" class="nav-link">AI Chatbot</a>
+      </div>
+      <div class="nav-badge">DGM Edition</div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-chip">🏭 Visakhapatnam Steel Plant</div>
+      <h1 class="hero-title">
+        Ace Your <span class="gradient-text">Vigilance</span> Interview
+      </h1>
+      <p class="hero-desc">
+        Your personal AI-powered preparation hub for the RINL Vizag Steel Plant
+        Vigilance Department DGM interview. Study smarter, not harder.
+      </p>
+      <div class="hero-stats">
+        <div class="stat-card">
+          <span class="stat-num">50+</span>
+          <span class="stat-label">Practice Questions</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num">8</span>
+          <span class="stat-label">Key Topics</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num">AI</span>
+          <span class="stat-label">Powered Chatbot</span>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <a href="#chatbot" class="btn-primary" id="hero-cta-chat">Ask the AI Bot →</a>
+        <a href="#topics" class="btn-secondary" id="hero-cta-topics">Explore Topics</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOPICS -->
+  <section id="topics">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-chip">📚 Study Guide</div>
+        <h2 class="section-title">Key Interview Topics</h2>
+        <p class="section-desc">Essential areas every Vigilance DGM must master</p>
+      </div>
+      <div class="topics-grid" id="topics-grid">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- TOPIC MODAL -->
+  <div id="topic-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close-btn" aria-label="Close">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- FLASHCARDS -->
+  <section id="flashcards">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-chip">🃏 Memory Aid</div>
+        <h2 class="section-title">Flashcard Deck</h2>
+        <p class="section-desc">Click to flip — test your knowledge one card at a time</p>
+      </div>
+      <div class="flashcard-controls">
+        <button id="fc-prev" class="fc-nav-btn" aria-label="Previous card">‹</button>
+        <div class="flashcard-wrapper">
+          <div class="flashcard" id="flashcard" role="button" tabindex="0" aria-label="Click to flip flashcard">
+            <div class="fc-front">
+              <div class="fc-tag" id="fc-tag"></div>
+              <p class="fc-question" id="fc-question"></p>
+              <span class="fc-hint">Click to reveal answer</span>
+            </div>
+            <div class="fc-back">
+              <p class="fc-answer" id="fc-answer"></p>
+            </div>
+          </div>
+          <div class="fc-counter"><span id="fc-current">1</span> / <span id="fc-total"></span></div>
+        </div>
+        <button id="fc-next" class="fc-nav-btn" aria-label="Next card">›</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-chip">🎯 Self Test</div>
+        <h2 class="section-title">Practice Quiz</h2>
+        <p class="section-desc">Challenge yourself with realistic interview questions</p>
+      </div>
+      <div class="quiz-container" id="quiz-container">
+        <!-- Quiz content rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- PDF DOCUMENTS -->
+  <section id="pdf-docs">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-chip">📄 Your Documents</div>
+        <h2 class="section-title">Upload PDF References</h2>
+        <p class="section-desc">Upload official documents — the chatbot will answer <em>only</em> from your PDFs. Zero hallucination.</p>
+      </div>
+
+      <div class="pdf-upload-zone" id="pdf-drop-zone">
+        <div class="pdf-upload-icon">📂</div>
+        <p class="pdf-upload-title">Drop PDFs here or click to browse</p>
+        <p class="pdf-upload-sub">Supports: RINL Vigilance Manual, CVC Circulars, CDA Rules, Annual Reports, etc.</p>
+        <input type="file" id="pdf-file-input" accept=".pdf" multiple hidden />
+        <button class="pdf-browse-btn" id="pdf-browse-btn">Choose PDF Files</button>
+      </div>
+
+      <div id="pdf-list-container" class="pdf-list-container hidden">
+        <div class="pdf-list-header">
+          <span class="pdf-list-title">📚 Loaded Documents</span>
+          <span id="pdf-total-chunks" class="pdf-chunks-badge"></span>
+        </div>
+        <div id="pdf-list" class="pdf-list"></div>
+      </div>
+
+      <div id="pdf-processing" class="pdf-processing hidden">
+        <div class="pdf-proc-spinner"></div>
+        <p id="pdf-proc-text">Processing PDF…</p>
+      </div>
+
+      <div class="pdf-info-banner">
+        <span>💡</span>
+        <div>
+          <strong>How it works:</strong> PDFs are read entirely in your browser — nothing is uploaded to any server.
+          The chatbot will search your documents first. If a relevant passage is found, it shows the exact source.
+          If nothing matches, it falls back to its built-in knowledge base (clearly labelled).
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHATBOT -->
+  <section id="chatbot">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="section-chip">🤖 AI Assistant</div>
+        <h2 class="section-title">Interview Prep Bot</h2>
+        <p class="section-desc">Ask anything about RINL Vigilance — get expert-level answers instantly</p>
+      </div>
+      <div class="chatbot-wrapper">
+        <div class="chat-sidebar">
+          <p class="sidebar-title">Suggested Questions</p>
+          <div class="quick-questions" id="quick-questions"></div>
+        </div>
+        <div class="chat-main">
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-bubble bot-bubble">
+              <div class="bot-avatar">🤖</div>
+              <div class="bubble-content">
+                <p>Namaste! I'm your RINL Vigilance Interview Prep Bot. 🏭</p>
+                <p>I can help you prepare for your <strong>Deputy General Manager (Vigilance)</strong> interview at Rashtriya Ispat Nigam Limited.</p>
+                <p>Ask me about CVC guidelines, disciplinary procedures, vigilance concepts, or anything related to your interview!</p>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <textarea id="chat-input" placeholder="Ask about CVC guidelines, disciplinary proceedings, preventive vigilance..." rows="2" aria-label="Chat input"></textarea>
+            <button id="chat-send-btn" aria-label="Send message">
+              <span id="send-icon">➤</span>
+              <span id="send-spinner" class="spinner hidden">⟳</span>
+            </button>
+          </div>
+          <p class="chat-disclaimer" id="chat-disclaimer-text">⚠️ No PDFs loaded yet — answers come from built-in knowledge base. Upload PDFs above for document-grounded answers.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer id="footer">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <span>⚙️ RINL Vigilance Prep</span>
+      </div>
+      <p class="footer-text">
+        Built with ❤️ for DGM interview success at <strong>Rashtriya Ispat Nigam Limited</strong> · Visakhapatnam Steel Plant
+      </p>
+      <p class="footer-disclaimer">
+        This is an unofficial preparation aid. All information should be verified with official RINL, CVC, and Ministry of Steel sources.
+      </p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
