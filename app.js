@@ -1483,6 +1483,25 @@ ${sampleContext}`;
       }
     });
   }
+
+  // Hamburger Menu
+  const hamburgerBtn = document.getElementById("hamburger-btn");
+  const navLinks = document.getElementById("nav-links");
+  if (hamburgerBtn && navLinks) {
+    hamburgerBtn.addEventListener("click", () => {
+      navLinks.classList.toggle("show");
+    });
+    
+    // close menu when a nav link is clicked
+    const navItems = document.querySelectorAll(".nav-link");
+    navItems.forEach(item => {
+      item.addEventListener("click", () => {
+         if (window.innerWidth <= 768) {
+             navLinks.classList.remove("show");
+         }
+      });
+    });
+  }
 });
 
 
